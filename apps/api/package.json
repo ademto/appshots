@@ -1,0 +1,16 @@
+{
+  "name": "@appshots/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "migrate": "bun src/db/migrate.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@appshots/shared": "workspace:*",
+    "aws4fetch": "^1.0.20",
+    "hono": "^4.13.13"
+  }
+}
