@@ -7,11 +7,18 @@ import { uploadRoutes } from "./routes/uploads";
 
 const app = new Hono();
 
+// Allowed web origins (comma-separated in WEB_ORIGIN), e.g.
+// "https://appshots.vercel.app,http://localhost:5173".
+const allowedOrigins = env.WEB_ORIGIN.split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 // Allow the web app to call the API with credentials (session cookie).
 app.use(
   "*",
   cors({
-    origin: env.WEB_ORIGIN,
+    origin: (origin) =>
+      allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
     credentials: true,
   }),
 );

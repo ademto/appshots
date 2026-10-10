@@ -87,10 +87,15 @@ export async function revokeSession(token: string): Promise<void> {
 }
 
 export function sessionCookieOptions() {
+  // Cross-origin deploy (frontend on Vercel, backend elsewhere): the session
+  // cookie must be SameSite=None and Secure, or the browser won't send it with
+  // credentialed cross-site requests and login won't persist. Locally (http)
+  // we keep Lax + non-secure so dev works over plain localhost.
+  const crossSite = isProd;
   return {
     httpOnly: true,
-    secure: isProd,
-    sameSite: "Lax" as const,
+    secure: crossSite, // SameSite=None requires Secure
+    sameSite: (crossSite ? "None" : "Lax") as "None" | "Lax",
     path: "/",
     maxAge: env.SESSION_TTL_DAYS * 24 * 60 * 60,
   };

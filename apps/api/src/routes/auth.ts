@@ -65,7 +65,13 @@ authRoutes.post("/verify", async (c) => {
 authRoutes.post("/logout", async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (token) await revokeSession(token);
-  deleteCookie(c, SESSION_COOKIE, { path: "/" });
+  // Match the attributes used when setting the cookie so the browser clears it.
+  const opts = sessionCookieOptions();
+  deleteCookie(c, SESSION_COOKIE, {
+    path: opts.path,
+    secure: opts.secure,
+    sameSite: opts.sameSite,
+  });
   return c.json({ ok: true });
 });
 

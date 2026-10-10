@@ -1,0 +1,40 @@
+# Render deploy blueprint for the AppShots backend API.
+# Deploy: push to your repo, then in Render -> New -> Blueprint, point at this file.
+# Set the secret env vars (DATABASE_URL, SESSION_SECRET, R2_*, etc.) in the
+# Render dashboard; they are intentionally not committed here.
+services:
+  - type: web
+    name: appshots-api
+    runtime: node
+    region: oregon
+    plan: free
+    # Bun is installed during build; the service runs the Hono API.
+    buildCommand: curl -fsSL https://bun.sh/install | bash && ~/.bun/bin/bun install
+    startCommand: ~/.bun/bin/bun apps/api/src/index.ts
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      # Comma-separated allowed web origins (your Vercel URL + localhost for testing).
+      - key: WEB_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: SESSION_TTL_DAYS
+        value: "30"
+      - key: DEV_LOGIN_CODE
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        value: appshots
+      - key: R2_PUBLIC_URL
+        sync: false
