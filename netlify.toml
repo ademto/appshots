@@ -4,6 +4,9 @@
 # Monorepo: install + build from the repo root so Bun workspace links
 # (@appshots/shared) resolve, then publish the web app's dist.
 [build]
+  # Force the repo root as base (overrides any 'base' set in the Netlify UI),
+  # so the workspace install and the publish path resolve correctly.
+  base = ""
   command = "bun install && bun run --filter '@appshots/web' build"
   publish = "apps/web/dist"
 
