@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { env } from "./env";
+import { authRoutes } from "./routes/auth";
 
 const app = new Hono();
 
@@ -15,8 +16,9 @@ app.use(
 
 app.get("/health", (c) => c.json({ ok: true, service: "appshots-api" }));
 
+app.route("/auth", authRoutes);
+
 // Routes mounted in later steps:
-// app.route("/auth", authRoutes);
 // app.route("/projects", projectRoutes);
 // app.route("/uploads", uploadRoutes);
 
