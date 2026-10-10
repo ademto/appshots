@@ -17,6 +17,7 @@ import {
   enqueueDelete,
   enqueueUpsert,
   flushOutbox,
+  isPristineProject,
   markAnonProjectsClaimed,
   mergeProjects,
   pullRemoteProjects,
@@ -78,27 +79,32 @@ export function useSync({
 
         if (shouldMigrateLocal) {
           await flushOutbox();
-          const local = projectsRef.current;
-          const merged = mergeProjects(local, remote);
+          // Only migrate real local work. An untouched auto-created default is
+          // not worth uploading — doing so added a junk project to the account
+          // on every fresh browser.
+          const local = projectsRef.current.filter(
+            (p) => !isPristineProject(p),
+          );
           const remoteById = new Map(remote.map((p) => [p.id, p]));
-          const resolvedMerged: Project[] = [];
-          for (const p of merged) {
+          const uploaded: Project[] = [];
+          for (const p of local) {
             const r = remoteById.get(p.id);
             if (!r || p.updatedAt > r.updatedAt) {
               const resolved = await resolveProjectImages(p).catch(() => p);
-              resolvedMerged.push(resolved);
+              uploaded.push(resolved);
               try {
                 await pushProject(resolved);
               } catch {
                 enqueueUpsert(resolved);
               }
-            } else {
-              resolvedMerged.push(p);
             }
           }
           markAnonProjectsClaimed();
-          lastSnapshot.current = new Map(resolvedMerged.map((p) => [p.id, p]));
-          onReplaceProjects(resolvedMerged);
+          // Result = this account's cloud projects plus any real local work we
+          // just migrated up (last-write-wins).
+          const result = mergeProjects(uploaded, remote);
+          lastSnapshot.current = new Map(result.map((p) => [p.id, p]));
+          onReplaceProjects(result);
         } else {
           // Subsequent account: this account's cloud projects ARE the truth.
           // Do not upload local projects. Clear any stale outbox from a

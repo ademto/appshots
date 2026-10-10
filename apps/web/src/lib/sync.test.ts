@@ -8,6 +8,7 @@ import {
   enqueueDelete,
   anonProjectsClaimed,
   markAnonProjectsClaimed,
+  isPristineProject,
 } from "./sync";
 
 const mk = (id: string, updatedAt: number, name = id): Project =>
@@ -24,6 +25,72 @@ const mk = (id: string, updatedAt: number, name = id): Project =>
     headlineFontSize: 72,
     subheadlineFontSize: 42,
   }) as Project;
+
+const DEFAULT_HEADLINE = "Showcase Your App";
+const DEFAULT_SUBHEADLINE =
+  "Create stunning App Store screenshots in minutes. Customizable templates, devices, and backgrounds.";
+
+const defaultDevice = () => ({
+  id: "d1",
+  deviceId: "iphone-15-pro-max",
+  colorId: "black",
+  screenshotSrc: null,
+  x: 50,
+  y: 30,
+  scale: 85,
+  rotation: 0,
+  shadow: { enabled: true, color: "#000", blur: 50, offsetX: 0, offsetY: 25 },
+  style: "flat" as const,
+  rotateY: -15,
+  rotateX: 5,
+});
+
+const defaultScreenshot = () => ({
+  id: "s1",
+  headline: DEFAULT_HEADLINE,
+  subheadline: DEFAULT_SUBHEADLINE,
+  backgroundColor: "#8b5cf6",
+  backgroundMode: "solid" as const,
+  gradientPresetId: null,
+  textColor: "#fff",
+  headlineX: 50,
+  headlineY: 10,
+  headlineWidth: 80,
+  subheadlineX: 50,
+  subheadlineY: 18,
+  subheadlineWidth: 80,
+  fontFamily: "Inter",
+  overlayImages: [],
+  devices: [defaultDevice()],
+  activeDeviceId: "d1",
+});
+
+const pristine = (): Project =>
+  ({ ...mk("p", 1), screenshots: [defaultScreenshot()] }) as Project;
+
+describe("isPristineProject", () => {
+  it("flags an untouched default project", () => {
+    expect(isPristineProject(pristine())).toBe(true);
+  });
+
+  it("is not pristine once the headline changes", () => {
+    const p = pristine();
+    p.screenshots[0].headline = "My Real App";
+    expect(isPristineProject(p)).toBe(false);
+  });
+
+  it("is not pristine with an uploaded screenshot", () => {
+    const p = pristine();
+    p.screenshots[0].devices[0].screenshotSrc = "data:image/png;base64,xxx";
+    expect(isPristineProject(p)).toBe(false);
+  });
+
+  it("is not pristine with overlay images or extra screenshots", () => {
+    const p = pristine();
+    p.screenshots.push(defaultScreenshot());
+    expect(isPristineProject(p)).toBe(false);
+  });
+});
 
 describe("mergeProjects (last-write-wins)", () => {
   it("keeps the newer copy per id", () => {

@@ -89,6 +89,30 @@ export async function flushOutbox(): Promise<Project[]> {
   return reconciled;
 }
 
+// ---- Pristine (untouched default) detection ----
+
+const DEFAULT_HEADLINE = "Showcase Your App";
+const DEFAULT_SUBHEADLINE =
+  "Create stunning App Store screenshots in minutes. Customizable templates, devices, and backgrounds.";
+
+/**
+ * True when a project is an untouched, auto-created default: a single
+ * screenshot with the default copy, one device with no uploaded screenshot, and
+ * no overlay images. Such projects are not worth syncing — uploading them is
+ * what caused a junk "New Project" to appear in the account on every fresh
+ * browser.
+ */
+export function isPristineProject(p: Project): boolean {
+  if (p.screenshots.length !== 1) return false;
+  const s = p.screenshots[0];
+  if (s.overlayImages.length > 0) return false;
+  if (s.devices.length !== 1) return false;
+  if (s.devices[0].screenshotSrc) return false;
+  if (s.headline !== DEFAULT_HEADLINE) return false;
+  if (s.subheadline !== DEFAULT_SUBHEADLINE) return false;
+  return true;
+}
+
 // ---- Merge (last-write-wins per project id) ----
 
 export function mergeProjects(local: Project[], remote: Project[]): Project[] {
