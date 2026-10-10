@@ -32,6 +32,8 @@ import {
   useEditorPersistence,
   clearPersistedState,
 } from "../lib/useLocalStorage";
+import { useSync } from "../lib/useSync";
+import { mergeProjects } from "../lib/sync";
 
 function generateId() {
   return Math.random().toString(36).substring(2, 9);
@@ -454,6 +456,29 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     setSubheadlineFontSizeState(project.subheadlineFontSize);
     setSelectedElement(null);
   };
+
+  // Merge projects pulled from the cloud into local state (last-write-wins).
+  // If the active project was replaced by a newer remote copy, refresh the
+  // working editor state so the canvas reflects the synced version.
+  const hydrateFromRemote = useCallback(
+    (merged: Project[]) => {
+      setProjects((prev) => mergeProjects(prev, merged));
+      const activeRemote = merged.find((p) => p.id === activeProjectId);
+      if (activeRemote && activeRemote.updatedAt > activeProject.updatedAt) {
+        setSelectedDeviceIdState(activeRemote.selectedDeviceId);
+        setSelectedColorIdState(activeRemote.selectedColorId);
+        setExportSizeIdState(activeRemote.exportSizeId);
+        setScreenshotsState(activeRemote.screenshots);
+        setActiveScreenshotIdState(activeRemote.activeScreenshotId);
+        setHeadlineFontSizeState(activeRemote.headlineFontSize);
+        setSubheadlineFontSizeState(activeRemote.subheadlineFontSize);
+      }
+    },
+    [activeProjectId, activeProject.updatedAt],
+  );
+
+  // Wire project list to cloud sync (no-op when signed out).
+  useSync({ projects, onRemoteProjects: hydrateFromRemote });
 
   const selectedDevice =
     getDeviceSpecById(selectedDeviceId);

@@ -4,8 +4,10 @@ import { CanvasPreview } from "./CanvasPreview";
 import { FontPicker } from "./FontPicker";
 import { GitHubStarModal } from "./GitHubStarModal";
 import { useEditor } from "../context/EditorContext";
+import { useAuth } from "../context/AuthContext";
+import { SignInDialog } from "./SignInDialog";
 import { GITHUB_REPO_URL } from "../constants";
-import { Star, X } from "lucide-react";
+import { Star, X, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export const EditorLayout = () => {
@@ -18,6 +20,8 @@ export const EditorLayout = () => {
     updateActiveScreenshot,
   } = useEditor();
 
+  const { user, status, signOut } = useAuth();
+  const [showSignIn, setShowSignIn] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
 
   return (
@@ -44,6 +48,41 @@ export const EditorLayout = () => {
           </button>
         </div>
       )}
+
+      {/* Account bar */}
+      <div className="flex items-center justify-end gap-3 bg-[#0f0f0f] px-4 py-1.5 text-xs shrink-0 border-b border-zinc-900">
+        {status === "loading" ? (
+          <span className="flex items-center gap-1.5 text-zinc-500">
+            <Loader2 size={12} className="animate-spin" />
+            Checking session…
+          </span>
+        ) : status === "signed-in" && user ? (
+          <>
+            <span
+              className="flex items-center gap-1.5 text-emerald-400"
+              title="Projects sync to the cloud"
+            >
+              <Cloud size={13} />
+              <span className="text-zinc-300">{user.email}</span>
+            </span>
+            <button
+              onClick={() => void signOut()}
+              className="text-zinc-500 hover:text-zinc-300 underline underline-offset-2"
+            >
+              Sign out
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setShowSignIn(true)}
+            className="flex items-center gap-1.5 text-zinc-400 hover:text-white"
+            title="Sign in to sync across devices"
+          >
+            <CloudOff size={13} />
+            Sign in to sync
+          </button>
+        )}
+      </div>
       <div className="flex flex-1 overflow-hidden">
         <LeftSidebar />
         <CanvasPreview />
@@ -59,6 +98,10 @@ export const EditorLayout = () => {
         <GitHubStarModal
           isOpen={isStarModalOpen}
           onClose={() => setIsStarModalOpen(false)}
+        />
+        <SignInDialog
+          isOpen={showSignIn}
+          onClose={() => setShowSignIn(false)}
         />
       </div>
     </div>
