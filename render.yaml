@@ -5,12 +5,12 @@
 services:
   - type: web
     name: appshots-api
-    runtime: node
+    runtime: bun
     region: oregon
     plan: free
-    # Bun is installed during build; the service runs the Hono API.
-    buildCommand: curl -fsSL https://bun.sh/install | bash && ~/.bun/bin/bun install
-    startCommand: ~/.bun/bin/bun apps/api/src/index.ts
+    # Render provides Bun on PATH natively; no manual install needed.
+    buildCommand: bun install
+    startCommand: bun apps/api/src/index.ts
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV

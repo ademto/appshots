@@ -1,10 +1,15 @@
 # Netlify build config for the AppShots frontend (apps/web).
 # Set VITE_API_URL in Netlify's env (Site settings -> Environment variables)
 # to your deployed backend URL, e.g. https://appshots-api.onrender.com
+# Monorepo: install + build from the repo root so Bun workspace links
+# (@appshots/shared) resolve, then publish the web app's dist.
 [build]
-  base = "apps/web"
-  command = "curl -fsSL https://bun.sh/install | bash && ~/.bun/bin/bun install && ~/.bun/bin/bun run build"
+  command = "bun install && bun run --filter '@appshots/web' build"
   publish = "apps/web/dist"
+
+# Netlify build image includes Bun; pin a version for reproducible builds.
+[build.environment]
+  BUN_VERSION = "1.4.2"
 
 # SPA fallback: let the client router handle all routes.
 [[redirects]]
