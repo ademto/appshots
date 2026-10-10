@@ -4,7 +4,11 @@
  * - Sends the session cookie on every request (`credentials: "include"`).
  * - Throws `ApiError` on non-2xx so callers can distinguish failures.
  */
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+// Strip any trailing slash so `${API_URL}/auth/...` never produces a double
+// slash (which 404s on the backend).
+const API_URL = (
+  import.meta.env.VITE_API_URL ?? "http://localhost:3000"
+).replace(/\/+$/, "");
 
 export class ApiError extends Error {
   status: number;
