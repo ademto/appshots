@@ -21,6 +21,7 @@ import {
   pullRemoteProjects,
 } from "./sync";
 import { pushProject } from "./projects-client";
+import { resolveProjectImages } from "./images";
 
 const PUSH_DEBOUNCE_MS = 1200;
 
@@ -63,21 +64,28 @@ export function useSync({ projects, onRemoteProjects }: UseSyncArgs) {
         // Upload local projects that are new or newer than remote.
         const remoteById = new Map(remote.map((p) => [p.id, p]));
         const firstMigration = !hasMigrated(user.id);
+        const resolvedMerged: Project[] = [];
         for (const p of merged) {
           const r = remoteById.get(p.id);
           if (!r || p.updatedAt > r.updatedAt) {
+            // Upload any base64 images to R2 before pushing (also the one-time
+            // migration of pre-existing images).
+            const resolved = await resolveProjectImages(p).catch(() => p);
+            resolvedMerged.push(resolved);
             try {
-              await pushProject(p);
+              await pushProject(resolved);
             } catch {
-              enqueueUpsert(p);
+              enqueueUpsert(resolved);
             }
+          } else {
+            resolvedMerged.push(p);
           }
         }
         if (firstMigration) markMigrated(user.id);
 
-        // Seed the change-detection snapshot with the merged set.
-        lastSnapshot.current = new Map(merged.map((p) => [p.id, p]));
-        onRemoteProjects(merged);
+        // Seed the change-detection snapshot with the resolved set.
+        lastSnapshot.current = new Map(resolvedMerged.map((p) => [p.id, p]));
+        onRemoteProjects(resolvedMerged);
       } catch {
         // Pull failed (offline/API down). Stay local-only; snapshot current.
         lastSnapshot.current = new Map(
@@ -136,13 +144,15 @@ export function useSync({ projects, onRemoteProjects }: UseSyncArgs) {
       setTimeout(async () => {
         timers.delete(project.id);
         try {
-          const res = await pushProject(project);
-          if (res.conflict) {
-            // Server had a newer copy; reconcile by handing it back.
-            onRemoteProjects(
-              mergeProjects(projectsRef.current, [res.project]),
-            );
-          }
+          // Upload any base64 images to R2 first, then push the URL version.
+          const resolved = await resolveProjectImages(project).catch(
+            () => project,
+          );
+          const res = await pushProject(resolved);
+          const winner = res.conflict ? res.project : resolved;
+          // Hand the result back so the editor swaps base64 -> URLs locally
+          // (and reconciles any server-newer copy).
+          onRemoteProjects(mergeProjects(projectsRef.current, [winner]));
         } catch {
           enqueueUpsert(project);
         }
