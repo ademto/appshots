@@ -477,8 +477,46 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     [activeProjectId, activeProject.updatedAt],
   );
 
+  // Load a project's fields into the working editor state (same as switching).
+  const loadProjectIntoEditor = useCallback((project: Project) => {
+    setActiveProjectId(project.id);
+    setSelectedDeviceIdState(project.selectedDeviceId);
+    setSelectedColorIdState(project.selectedColorId);
+    setExportSizeIdState(project.exportSizeId);
+    setScreenshotsState(project.screenshots);
+    setActiveScreenshotIdState(project.activeScreenshotId);
+    setHeadlineFontSizeState(project.headlineFontSize);
+    setSubheadlineFontSizeState(project.subheadlineFontSize);
+    setSelectedElement(null);
+  }, []);
+
+  // Replace ALL projects with this account's cloud projects on sign-in, so one
+  // account never shows another account's work. Falls back to a fresh default
+  // when the account has no projects yet.
+  const replaceAllProjects = useCallback(
+    (next: Project[]) => {
+      const list = next.length > 0 ? next : [createDefaultProject()];
+      setProjects(list);
+      loadProjectIntoEditor(list[0]);
+    },
+    [loadProjectIntoEditor],
+  );
+
+  // On real logout, start fresh so the previous account's data is gone.
+  const handleSignedOut = useCallback(() => {
+    clearPersistedState();
+    const fresh = createDefaultProject();
+    setProjects([fresh]);
+    loadProjectIntoEditor(fresh);
+  }, [loadProjectIntoEditor]);
+
   // Wire project list to cloud sync (no-op when signed out).
-  useSync({ projects, onRemoteProjects: hydrateFromRemote });
+  useSync({
+    projects,
+    onRemoteProjects: hydrateFromRemote,
+    onReplaceProjects: replaceAllProjects,
+    onSignedOut: handleSignedOut,
+  });
 
   const selectedDevice =
     getDeviceSpecById(selectedDeviceId);

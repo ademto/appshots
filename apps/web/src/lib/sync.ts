@@ -13,7 +13,10 @@ import type { Project } from "@appshots/shared";
 import { fetchProjects, pushProject, deleteProject } from "./projects-client";
 
 const OUTBOX_KEY = "appshots-sync-outbox";
-const MIGRATED_KEY_PREFIX = "appshots-cloud-migrated:";
+// Global marker: the anonymous local projects have been claimed by an account.
+// After this is set, signing into any *other* account must NOT re-upload the
+// local projects (that would leak one account's work into another).
+const ANON_CLAIMED_KEY = "appshots-anon-claimed";
 
 type OutboxEntry =
   | { kind: "upsert"; project: Project }
@@ -106,12 +109,24 @@ export async function pullRemoteProjects(): Promise<Project[]> {
   return fetchProjects();
 }
 
-// ---- One-time migration marker ----
+// ---- One-time anonymous-migration claim ----
 
-export function hasMigrated(userId: string): boolean {
-  return localStorage.getItem(MIGRATED_KEY_PREFIX + userId) === "1";
+/**
+ * Whether the local anonymous projects have already been claimed by an account.
+ * Once true, no further account should absorb the local projects on sign-in.
+ */
+export function anonProjectsClaimed(): boolean {
+  return localStorage.getItem(ANON_CLAIMED_KEY) === "1";
 }
 
-export function markMigrated(userId: string): void {
-  localStorage.setItem(MIGRATED_KEY_PREFIX + userId, "1");
+export function markAnonProjectsClaimed(): void {
+  localStorage.setItem(ANON_CLAIMED_KEY, "1");
+}
+
+export function clearOutbox(): void {
+  try {
+    localStorage.removeItem(OUTBOX_KEY);
+  } catch {
+    // ignore
+  }
 }

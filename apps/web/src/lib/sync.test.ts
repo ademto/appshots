@@ -6,8 +6,8 @@ import {
   mergeProjects,
   enqueueUpsert,
   enqueueDelete,
-  hasMigrated,
-  markMigrated,
+  anonProjectsClaimed,
+  markAnonProjectsClaimed,
 } from "./sync";
 
 const mk = (id: string, updatedAt: number, name = id): Project =>
@@ -62,10 +62,25 @@ describe("outbox + migration markers", () => {
     expect(raw[0]).toEqual({ kind: "delete", id: "a" });
   });
 
-  it("tracks one-time migration per user", () => {
-    expect(hasMigrated("u1")).toBe(false);
-    markMigrated("u1");
-    expect(hasMigrated("u1")).toBe(true);
-    expect(hasMigrated("u2")).toBe(false);
+  it("tracks the one-time anonymous-projects claim globally", () => {
+    expect(anonProjectsClaimed()).toBe(false);
+    markAnonProjectsClaimed();
+    expect(anonProjectsClaimed()).toBe(true);
+  });
+
+  // Leak-prevention contract: the sign-in flow only uploads local projects
+  // when the anonymous projects have NOT yet been claimed. After the first
+  // account claims them, a second account must sign in pull-only, so account
+  // A's work can never bleed into account B.
+  it("gates local upload on the anon claim (no cross-account leak)", () => {
+    // First account on a fresh machine -> allowed to migrate local up.
+    expect(anonProjectsClaimed()).toBe(false);
+    const firstAccountMigrates = !anonProjectsClaimed();
+    expect(firstAccountMigrates).toBe(true);
+    markAnonProjectsClaimed();
+
+    // Any later account -> must NOT upload local projects.
+    const secondAccountMigrates = !anonProjectsClaimed();
+    expect(secondAccountMigrates).toBe(false);
   });
 });

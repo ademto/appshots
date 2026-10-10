@@ -12,11 +12,12 @@ import { useEffect, useRef } from "react";
 import type { Project } from "@appshots/shared";
 import { useAuth } from "../context/AuthContext";
 import {
+  anonProjectsClaimed,
+  clearOutbox,
   enqueueDelete,
   enqueueUpsert,
   flushOutbox,
-  hasMigrated,
-  markMigrated,
+  markAnonProjectsClaimed,
   mergeProjects,
   pullRemoteProjects,
 } from "./sync";
@@ -27,11 +28,26 @@ const PUSH_DEBOUNCE_MS = 1200;
 
 interface UseSyncArgs {
   projects: Project[];
-  /** Called with the merged project list after a pull, to hydrate the editor. */
+  /** Merge pulled projects into the editor (used for live sync reconciliation). */
   onRemoteProjects: (merged: Project[]) => void;
+  /**
+   * Replace the editor's projects entirely with this account's cloud projects.
+   * Used on sign-in so one account never shows another account's work.
+   */
+  onReplaceProjects: (projects: Project[]) => void;
+  /**
+   * Called on an actual logout (signed-in -> signed-out) so the editor clears
+   * the previous account's data and starts from a clean default.
+   */
+  onSignedOut: () => void;
 }
 
-export function useSync({ projects, onRemoteProjects }: UseSyncArgs) {
+export function useSync({
+  projects,
+  onRemoteProjects,
+  onReplaceProjects,
+  onSignedOut,
+}: UseSyncArgs) {
   const { user, status } = useAuth();
 
   // Snapshot of what we last saw, to detect which projects changed / were removed.
@@ -52,40 +68,45 @@ export function useSync({ projects, onRemoteProjects }: UseSyncArgs) {
     let cancelled = false;
     (async () => {
       try {
-        // Push anything stuck in the outbox first.
-        await flushOutbox();
-
         const remote = await pullRemoteProjects();
         if (cancelled) return;
 
-        const local = projectsRef.current;
-        const merged = mergeProjects(local, remote);
+        // First account ever on this machine: claim the anonymous local
+        // projects by uploading them. Every later account skips this so one
+        // account's work never leaks into another.
+        const shouldMigrateLocal = !anonProjectsClaimed();
 
-        // Upload local projects that are new or newer than remote.
-        const remoteById = new Map(remote.map((p) => [p.id, p]));
-        const firstMigration = !hasMigrated(user.id);
-        const resolvedMerged: Project[] = [];
-        for (const p of merged) {
-          const r = remoteById.get(p.id);
-          if (!r || p.updatedAt > r.updatedAt) {
-            // Upload any base64 images to R2 before pushing (also the one-time
-            // migration of pre-existing images).
-            const resolved = await resolveProjectImages(p).catch(() => p);
-            resolvedMerged.push(resolved);
-            try {
-              await pushProject(resolved);
-            } catch {
-              enqueueUpsert(resolved);
+        if (shouldMigrateLocal) {
+          await flushOutbox();
+          const local = projectsRef.current;
+          const merged = mergeProjects(local, remote);
+          const remoteById = new Map(remote.map((p) => [p.id, p]));
+          const resolvedMerged: Project[] = [];
+          for (const p of merged) {
+            const r = remoteById.get(p.id);
+            if (!r || p.updatedAt > r.updatedAt) {
+              const resolved = await resolveProjectImages(p).catch(() => p);
+              resolvedMerged.push(resolved);
+              try {
+                await pushProject(resolved);
+              } catch {
+                enqueueUpsert(resolved);
+              }
+            } else {
+              resolvedMerged.push(p);
             }
-          } else {
-            resolvedMerged.push(p);
           }
+          markAnonProjectsClaimed();
+          lastSnapshot.current = new Map(resolvedMerged.map((p) => [p.id, p]));
+          onReplaceProjects(resolvedMerged);
+        } else {
+          // Subsequent account: this account's cloud projects ARE the truth.
+          // Do not upload local projects. Clear any stale outbox from a
+          // previous account so it can't flush into this one.
+          const sorted = [...remote].sort((a, b) => b.updatedAt - a.updatedAt);
+          lastSnapshot.current = new Map(sorted.map((p) => [p.id, p]));
+          onReplaceProjects(sorted);
         }
-        if (firstMigration) markMigrated(user.id);
-
-        // Seed the change-detection snapshot with the resolved set.
-        lastSnapshot.current = new Map(resolvedMerged.map((p) => [p.id, p]));
-        onRemoteProjects(resolvedMerged);
       } catch {
         // Pull failed (offline/API down). Stay local-only; snapshot current.
         lastSnapshot.current = new Map(
@@ -99,13 +120,29 @@ export function useSync({ projects, onRemoteProjects }: UseSyncArgs) {
     };
   }, [status, user, onRemoteProjects]);
 
-  // Reset hydration flag on sign-out so a future sign-in re-pulls.
+  // Handle sign-out. Distinguish a real logout (was signed-in) from the
+  // initial load (loading -> signed-out), which must NOT wipe anonymous local
+  // projects.
+  const prevStatus = useRef(status);
   useEffect(() => {
+    const was = prevStatus.current;
+    prevStatus.current = status;
+
     if (status === "signed-out") {
       hydratedForUser.current = null;
       lastSnapshot.current = new Map();
+      // Cancel any pending debounced pushes from the previous account.
+      for (const t of pushTimers.current.values()) clearTimeout(t);
+      pushTimers.current.clear();
+
+      if (was === "signed-in") {
+        // Real logout: clear the previous account's outbox and reset the editor
+        // so nothing bleeds into the next account.
+        clearOutbox();
+        onSignedOut();
+      }
     }
-  }, [status]);
+  }, [status, onSignedOut]);
 
   // --- Push on change (debounced per project) ---
   useEffect(() => {
