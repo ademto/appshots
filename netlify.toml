@@ -1,0 +1,13 @@
+# Netlify build config for the AppShots frontend (apps/web).
+# Set VITE_API_URL in Netlify's env (Site settings -> Environment variables)
+# to your deployed backend URL, e.g. https://appshots-api.onrender.com
+[build]
+  base = "apps/web"
+  command = "curl -fsSL https://bun.sh/install | bash && ~/.bun/bin/bun install && ~/.bun/bin/bun run build"
+  publish = "apps/web/dist"
+
+# SPA fallback: let the client router handle all routes.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
