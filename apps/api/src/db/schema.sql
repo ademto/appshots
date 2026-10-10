@@ -33,11 +33,15 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id);
 
 -- Projects. The whole client Project object is stored as JSONB.
+-- `id` is the client-generated project id (an arbitrary short string, not a
+-- UUID), stored as TEXT so no id transformation is needed on either side.
+-- It is unique per user rather than globally.
 CREATE TABLE IF NOT EXISTS projects (
-  id          UUID PRIMARY KEY,
+  id          TEXT NOT NULL,
   user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   data        JSONB NOT NULL,
   updated_at  TIMESTAMPTZ NOT NULL,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, id)
 );
 CREATE INDEX IF NOT EXISTS idx_projects_user ON projects (user_id);
