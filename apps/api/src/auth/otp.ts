@@ -7,6 +7,7 @@
  * - Rate limited per email; verify attempts are capped per code.
  */
 import { sql } from "../db/client";
+import { env } from "../env";
 
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_REQUESTS_PER_WINDOW = 5;
@@ -72,6 +73,12 @@ export async function verifyLoginCode(
   email: string,
   code: string,
 ): Promise<boolean> {
+  // Fixed login code (when set): always accepted, no DB code required. Lets you
+  // sign in without reading the console code before real email is wired up.
+  if (env.DEV_LOGIN_CODE && code === env.DEV_LOGIN_CODE) {
+    return true;
+  }
+
   const rows = await sql`
     SELECT id, code_hash, attempts
     FROM login_codes

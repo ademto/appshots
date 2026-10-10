@@ -38,6 +38,10 @@ export const env = {
   // Email (deferred for v1): console | ses | ...
   EMAIL_PROVIDER: optional("EMAIL_PROVIDER", "console"),
 
+  // Fixed login code that always works (for use before real email is wired up,
+  // when you can't read the console code). Empty = disabled.
+  DEV_LOGIN_CODE: optional("DEV_LOGIN_CODE", ""),
+
   // CORS / web origin (for credentialed cookie requests)
   WEB_ORIGIN: optional("WEB_ORIGIN", "http://localhost:5173"),
 
