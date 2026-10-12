@@ -20,6 +20,19 @@ interface ExportOptions {
 }
 
 /**
+ * For remote (http) image URLs, append a cache-busting query param so the
+ * export always fetches a fresh copy WITH CORS headers. Without this, a browser
+ * may reuse a previously-cached copy (fetched as a plain <img> without CORS),
+ * which taints the canvas and drops the image from the export. `data:` URLs are
+ * returned unchanged.
+ */
+const bustImageCache = (src: string): string => {
+  if (!src || src.startsWith("data:")) return src;
+  const sep = src.includes("?") ? "&" : "?";
+  return `${src}${sep}cb=${Date.now()}`;
+};
+
+/**
  * Convert data URL to Blob
  */
 const dataURLtoBlob = (dataURL: string): Blob => {
@@ -343,7 +356,7 @@ const renderDeviceToOffscreen = async (
         resolve();
       };
       img.onerror = () => resolve();
-      img.src = screenshotSrc;
+      img.src = bustImageCache(screenshotSrc);
     });
   }
 
@@ -844,7 +857,7 @@ const drawDeviceInstance = async (
         resolve();
       };
       img.onerror = () => resolve();
-      img.src = screenshotSrc;
+      img.src = bustImageCache(screenshotSrc);
     });
   }
 
@@ -985,7 +998,7 @@ const renderScreenshotToDataURL = async (
             resolve();
           };
           img.onerror = () => resolve();
-          img.src = overlayImg.src;
+          img.src = bustImageCache(overlayImg.src);
         });
       }
     };

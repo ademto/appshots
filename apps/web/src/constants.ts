@@ -245,29 +245,62 @@ export const gradientPresets: GradientPreset[] = [
   { id: "rose", label: "Rose", from: "#f4c4f3", to: "#fc67fa" },
 ];
 
+// App Store screenshot sizes (portrait), per Apple's current spec:
+// https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
+// The two REQUIRED slots are listed first as the defaults:
+//   - iPhone "Dynamic Island (medium display)": 1179 x 2556
+//   - iPad 13": 2064 x 2752
+// Uploading only these lets App Store Connect scale down for other sizes.
 export const exportSizes: ExportSize[] = [
-  // iPhone 6.9" is Apple's current primary required size. Upload just this set
-  // and App Store Connect scales it down for smaller iPhones.
+  // --- Required ---
   {
-    id: "6.9",
-    label: "6.9 inch (iPhone 16/17 Pro Max)",
+    id: "iphone-di-medium",
+    label: "iPhone 6.1\" — Dynamic Island (iPhone 15/16/17) — required",
+    width: 1179,
+    height: 2556,
+  },
+  {
+    id: "ipad-13",
+    label: "iPad 13\" (iPad Pro M4) — required",
+    width: 2064,
+    height: 2752,
+  },
+  // --- Other accepted iPhone sizes ---
+  {
+    id: "iphone-di-medium-alt",
+    label: "iPhone 6.3\" — Dynamic Island (1206 × 2622)",
+    width: 1206,
+    height: 2622,
+  },
+  {
+    id: "iphone-di-large",
+    label: "iPhone 6.9\" — Dynamic Island (16/17 Pro Max)",
     width: 1320,
     height: 2868,
   },
   {
-    id: "6.7",
-    label: "6.7 inch (iPhone 15/14 Pro Max)",
+    id: "iphone-6.7",
+    label: "iPhone 6.7\" (15/14 Pro Max)",
     width: 1290,
     height: 2796,
   },
   {
-    id: "6.5",
-    label: "6.5 inch (iPhone 11 Pro Max)",
+    id: "iphone-faceid-large",
+    label: "iPhone 6.5\" — Face ID (11 Pro Max)",
     width: 1242,
     height: 2688,
   },
-  { id: "5.5", label: "5.5 inch (iPhone 8 Plus)", width: 1242, height: 2208 },
-  // iPad 13" is the current required iPad size (replaces the old 12.9").
-  { id: "ipad-13", label: "13 inch (iPad Pro)", width: 2064, height: 2752 },
-  { id: "ipad-12.9", label: "12.9 inch (iPad Pro)", width: 2048, height: 2732 },
+  {
+    id: "iphone-5.5",
+    label: "iPhone 5.5\" (8 Plus)",
+    width: 1242,
+    height: 2208,
+  },
+  // --- Other accepted iPad sizes ---
+  {
+    id: "ipad-12.9",
+    label: "iPad 12.9\" (legacy)",
+    width: 2048,
+    height: 2732,
+  },
 ];
