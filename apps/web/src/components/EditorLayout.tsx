@@ -49,14 +49,9 @@ export const EditorLayout = () => {
         </div>
       )}
 
-      {/* Account bar */}
+      {/* Account bar — always shows an actionable control (never blank). */}
       <div className="flex items-center justify-end gap-3 bg-[#0f0f0f] px-4 py-1.5 text-xs shrink-0 border-b border-zinc-900">
-        {status === "loading" ? (
-          <span className="flex items-center gap-1.5 text-zinc-500">
-            <Loader2 size={12} className="animate-spin" />
-            Checking session…
-          </span>
-        ) : status === "signed-in" && user ? (
+        {status === "signed-in" && user ? (
           <>
             <span
               className="flex items-center gap-1.5 text-emerald-400"
@@ -67,20 +62,25 @@ export const EditorLayout = () => {
             </span>
             <button
               onClick={() => void signOut()}
-              className="text-zinc-500 hover:text-zinc-300 underline underline-offset-2"
+              className="rounded-md border border-zinc-700 px-2.5 py-1 text-zinc-200 hover:bg-zinc-800"
             >
               Sign out
             </button>
           </>
         ) : (
-          <button
-            onClick={() => setShowSignIn(true)}
-            className="flex items-center gap-1.5 text-zinc-400 hover:text-white"
-            title="Sign in to sync across devices"
-          >
-            <CloudOff size={13} />
-            Sign in to sync
-          </button>
+          <>
+            {status === "loading" && (
+              <Loader2 size={12} className="animate-spin text-zinc-500" />
+            )}
+            <button
+              onClick={() => setShowSignIn(true)}
+              className="flex items-center gap-1.5 rounded-md border border-zinc-700 px-2.5 py-1 text-zinc-200 hover:bg-zinc-800"
+              title="Sign in to sync across devices"
+            >
+              <CloudOff size={13} />
+              Sign in to sync
+            </button>
+          </>
         )}
       </div>
       <div className="flex flex-1 overflow-hidden">
