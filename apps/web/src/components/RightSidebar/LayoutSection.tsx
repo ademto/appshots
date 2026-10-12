@@ -88,7 +88,16 @@ export const LayoutSection = ({
         />
 
         <RangeSlider
-          label="Device Position"
+          label="Device Position X"
+          value={device.x}
+          min={SLIDER_RANGES.devicePositionX.min}
+          max={SLIDER_RANGES.devicePositionX.max}
+          unit="%"
+          onChange={(v) => onUpdateDevice({ x: v })}
+        />
+
+        <RangeSlider
+          label="Device Position Y"
           value={device.y}
           min={SLIDER_RANGES.devicePosition.min}
           max={SLIDER_RANGES.devicePosition.max}

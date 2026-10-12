@@ -44,6 +44,7 @@ export const CanvasPreview = () => {
     subheadlineFontSize,
     setPreviewDimensions,
     exportSize,
+    handleExportSingle,
   } = useEditor();
 
   // Track preview dimensions for export scaling
@@ -92,6 +93,7 @@ export const CanvasPreview = () => {
                   }
                 }}
                 onRemove={() => removeScreenshot(screenshot.id)}
+                onExport={() => handleExportSingle(index)}
                 onDeselect={() => setSelectedElement(null)}
                 onElementMouseDown={handleElementMouseDown}
                 onElementMouseUp={handleElementMouseUp}

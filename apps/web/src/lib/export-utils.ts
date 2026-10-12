@@ -893,27 +893,27 @@ const drawDeviceInstance = async (
   ctx.restore();
 };
 
-export const exportScreenshots = async ({
-  screenshots,
-  exportSize,
-  previewDimensions,
-  headlineFontSize,
-  subheadlineFontSize,
-}: ExportOptions) => {
-  // Wait for fonts to be loaded before exporting
-  await document.fonts.ready;
-
-  const exportedFiles: { name: string; data: string }[] = [];
-
-  for (let i = 0; i < screenshots.length; i++) {
+/**
+ * Render a single screenshot (by index) to a PNG data URL.
+ */
+const renderScreenshotToDataURL = async (
+  i: number,
+  {
+    screenshots,
+    exportSize,
+    previewDimensions,
+    headlineFontSize,
+    subheadlineFontSize,
+  }: ExportOptions,
+): Promise<string | null> => {
+  {
     const screenshot = screenshots[i];
-    const filename = `appstore-screenshot-${i + 1}.png`;
 
     const canvas = document.createElement("canvas");
     canvas.width = exportSize.width;
     canvas.height = exportSize.height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) continue;
+    if (!ctx) return null;
 
     // Scale factor for export - use actual preview dimensions for accurate scaling
     // This ensures export matches preview exactly
@@ -1039,9 +1039,21 @@ export const exportScreenshots = async ({
     // Draw overlay images in front of device
     await drawOverlayImages("front");
 
-    // Add to exported files
-    const dataURL = canvas.toDataURL("image/png");
-    exportedFiles.push({ name: filename, data: dataURL });
+    return canvas.toDataURL("image/png");
+  }
+};
+
+export const exportScreenshots = async (options: ExportOptions) => {
+  // Wait for fonts to be loaded before exporting
+  await document.fonts.ready;
+
+  const exportedFiles: { name: string; data: string }[] = [];
+
+  for (let i = 0; i < options.screenshots.length; i++) {
+    const dataURL = await renderScreenshotToDataURL(i, options);
+    if (dataURL) {
+      exportedFiles.push({ name: `appstore-screenshot-${i + 1}.png`, data: dataURL });
+    }
   }
 
   // Download: single file directly, multiple files as ZIP
@@ -1049,5 +1061,19 @@ export const exportScreenshots = async ({
     downloadFile(exportedFiles[0].data, exportedFiles[0].name);
   } else if (exportedFiles.length > 1) {
     await downloadAsZip(exportedFiles);
+  }
+};
+
+/**
+ * Export just one screenshot (by index) as a PNG download.
+ */
+export const exportSingleScreenshot = async (
+  index: number,
+  options: ExportOptions,
+) => {
+  await document.fonts.ready;
+  const dataURL = await renderScreenshotToDataURL(index, options);
+  if (dataURL) {
+    downloadFile(dataURL, `appstore-screenshot-${index + 1}.png`);
   }
 };

@@ -108,6 +108,7 @@ export const STYLES = {
 export const SLIDER_RANGES = {
   deviceScale: { min: 40, max: 90 },
   devicePosition: { min: 20, max: 60 },
+  devicePositionX: { min: -20, max: 120 },
   deviceRotation: { min: 0, max: 360 },
   headlineSize: { min: 32, max: 120 },
   subheadlineSize: { min: 20, max: 72 },

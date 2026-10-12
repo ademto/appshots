@@ -7,6 +7,7 @@
 import type { RefObject } from "react";
 import type { Screenshot, ExportSize, SelectedElement } from "../../types";
 import type { RenderableDevice } from "../../lib/device-overflow";
+import { Download } from "lucide-react";
 import { RemoveButton } from "./RemoveButton";
 import { OverlayImage } from "./OverlayImage";
 import { TextElement } from "./TextElement";
@@ -39,6 +40,8 @@ interface ScreenshotCardProps {
   onSelect: () => void;
   /** Handler for removing this screenshot */
   onRemove: () => void;
+  /** Handler for exporting just this screenshot */
+  onExport: () => void;
   /** Handler for deselecting elements */
   onDeselect: () => void;
   /** Handler for element mouse down */
@@ -73,6 +76,7 @@ export const ScreenshotCard = ({
   getBackgroundStyle,
   onSelect,
   onRemove,
+  onExport,
   onDeselect,
   onElementMouseDown,
   onElementMouseUp,
@@ -111,6 +115,19 @@ export const ScreenshotCard = ({
           : undefined,
       }}
     >
+      {/* Export this screenshot (top-left) */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onExport();
+        }}
+        title="Export this screenshot"
+        aria-label="Export this screenshot"
+        className="absolute top-2 left-2 w-6 h-6 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white z-10"
+      >
+        <Download className="w-3 h-3" />
+      </button>
+
       {/* Remove button */}
       {canRemove && <RemoveButton onRemove={onRemove} />}
 

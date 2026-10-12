@@ -19,7 +19,7 @@ import type {
   SelectedElement,
 } from "../types";
 import { devices, exportSizes, gradientPresets } from "../constants";
-import { exportScreenshots } from "../lib/export-utils";
+import { exportScreenshots, exportSingleScreenshot } from "../lib/export-utils";
 import {
   cloneDeviceInstance,
   createDeviceInstance,
@@ -120,6 +120,7 @@ interface EditorContextType {
   sendImageToBack: (imageId: string) => void;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleExport: () => void;
+  handleExportSingle: (index: number) => void;
   getBackgroundStyle: (screenshot: Screenshot) => string;
   resetEditor: () => void;
 }
@@ -1026,6 +1027,18 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     setIsStarModalOpen(true);
   };
 
+  // Export a single screenshot (by index) as a PNG download.
+  const handleExportSingle = (index: number) => {
+    void exportSingleScreenshot(index, {
+      screenshots,
+      exportSize,
+      previewDimensions,
+      headlineFontSize,
+      subheadlineFontSize,
+    });
+    setIsStarModalOpen(true);
+  };
+
   /**
    * Resets the editor to default state and clears localStorage
    */
@@ -1113,6 +1126,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         sendImageToBack,
         handleFileUpload,
         handleExport,
+        handleExportSingle,
         getBackgroundStyle,
         resetEditor,
       }}
