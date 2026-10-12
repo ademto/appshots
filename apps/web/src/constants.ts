@@ -246,11 +246,19 @@ export const gradientPresets: GradientPreset[] = [
 ];
 
 export const exportSizes: ExportSize[] = [
+  // iPhone 6.9" is Apple's current primary required size. Upload just this set
+  // and App Store Connect scales it down for smaller iPhones.
+  {
+    id: "6.9",
+    label: "6.9 inch (iPhone 16/17 Pro Max)",
+    width: 1320,
+    height: 2868,
+  },
   {
     id: "6.7",
-    label: "6.7 inch (iPhone 13/12 Pro Max)",
-    width: 1284,
-    height: 2778,
+    label: "6.7 inch (iPhone 15/14 Pro Max)",
+    width: 1290,
+    height: 2796,
   },
   {
     id: "6.5",
@@ -259,5 +267,7 @@ export const exportSizes: ExportSize[] = [
     height: 2688,
   },
   { id: "5.5", label: "5.5 inch (iPhone 8 Plus)", width: 1242, height: 2208 },
-  { id: "ipad", label: "12.9 inch (iPad Pro)", width: 2048, height: 2732 },
+  // iPad 13" is the current required iPad size (replaces the old 12.9").
+  { id: "ipad-13", label: "13 inch (iPad Pro)", width: 2064, height: 2752 },
+  { id: "ipad-12.9", label: "12.9 inch (iPad Pro)", width: 2048, height: 2732 },
 ];
